@@ -1,7 +1,7 @@
 services:
   auth-service:
     build:
-      context: ./auth-service/auth-service
+      context: ./auth-service
       dockerfile: Dockerfile
     image: auth-service:latest
     container_name: auth-service
@@ -36,7 +36,7 @@ services:
 
   api-gateway:
     build:
-      context: ./api-gateway/api-gateway
+      context: ./api-gateway
       dockerfile: Dockerfile
     image: api-gateway:latest
     container_name: api-gateway
@@ -60,7 +60,7 @@ services:
 
   patient-service:
     build:
-      context: ./patient-service/patient-service
+      context: ./patient-service
       dockerfile: Dockerfile
     image: patient-service
     container_name: patient-service_latest
@@ -79,7 +79,7 @@ services:
 
   billing-service:
     build:
-      context: ./billing-service/billing-service
+      context: ./billing-service
       dockerfile: Dockerfile
     image: billing-service:latest
     container_name: billing-service
