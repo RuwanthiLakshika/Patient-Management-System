@@ -1,0 +1,109 @@
+services:
+  auth-service:
+    build:
+      context: ./auth-service/auth-service
+      dockerfile: Dockerfile
+    image: auth-service:latest
+    container_name: auth-service
+    ports:
+      - "4005:4005"
+    environment:
+      JWT_SECRET: VGhpcyBpcyBhIGRldiBzZWNyZXQga2V5IGZvciBsb2NhbCB1c2U=
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-service-db:5432/auth_db
+      SPRING_DATASOURCE_USERNAME: admin_user
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      auth-service-db:
+        condition: service_healthy
+
+  auth-service-db:
+    image: postgres:latest
+    container_name: auth-service-db
+    ports:
+      - "5001:5432"
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: admin_user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - auth-service-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_user -d auth_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api-gateway:
+    build:
+      context: ./api-gateway/api-gateway
+      dockerfile: Dockerfile
+    image: api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "4004:4004"
+    depends_on:
+      auth-service:
+        condition: service_started
+      patient-service:
+        condition: service_started
+
+  patient-service-db:
+    image: postgres:latest
+    container_name: patient-service-db
+    ports:
+      - "5000:5432"
+    environment:
+      POSTGRES_DB: db
+      POSTGRES_USER: admin_user
+      POSTGRES_PASSWORD: password
+
+  patient-service:
+    build:
+      context: ./patient-service/patient-service
+      dockerfile: Dockerfile
+    image: patient-service
+    container_name: patient-service_latest
+    ports:
+      - "4000:4000"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://patient-service-db:5432/db
+      SPRING_DATASOURCE_USERNAME: admin_user
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      BILLING_SERVICE_ADDRESS: billing-service
+      BILLING_SERVICE_GRPC_PORT: 9001
+    depends_on:
+      - patient-service-db
+      - billing-service
+
+  billing-service:
+    build:
+      context: ./billing-service/billing-service
+      dockerfile: Dockerfile
+    image: billing-service:latest
+    container_name: billing-service
+    ports:
+      - "4001:4001"
+      - "9001:9001"
+
+  adminer:
+    image: adminer:latest
+    container_name: patient-service-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: auth-service-db
+    depends_on:
+      auth-service-db:
+        condition: service_healthy
+      patient-service-db:
+        condition: service_started
+
+volumes:
+  auth-service-db-data:
+
+networks:
+  default:
+    name: internal
+    external: true
