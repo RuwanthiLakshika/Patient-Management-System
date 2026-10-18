@@ -6,12 +6,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import patient.events.PatientEvent;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 public class KafkaConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(
             KafkaConsumer.class);
+    private final List<PatientActivity> activities = new CopyOnWriteArrayList<>();
 
     @KafkaListener(topics="patient", groupId = "analytics-service")
     public void consumeEvent(byte[] event) {
@@ -23,9 +26,20 @@ public class KafkaConsumer {
                     patientEvent.getPatientId(),
                     patientEvent.getName(),
                     patientEvent.getEmail());
+            activities.add(new PatientActivity(
+                    patientEvent.getPatientId(),
+                    patientEvent.getName(),
+                    patientEvent.getEmail(),
+                    patientEvent.getEventType()));
         } catch (InvalidProtocolBufferException e) {
             log.error("Error deserializing event {}", e.getMessage());
         }
     }
-}
 
+    public List<PatientActivity> getActivities() {
+        return List.copyOf(activities);
+    }
+
+    public record PatientActivity(String patientId, String patientName,
+                                  String email, String eventType) {}
+}

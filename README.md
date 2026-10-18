@@ -36,6 +36,41 @@ Amazon RDS, Amazon MSK, Application Load Balancer, IAM, and CloudWatch.
 
 Kafka is available to the application containers at `kafka:9092`.
 
+### Frontend
+
+The React frontend lives in `frontend/` and connects to the API gateway through
+Vite's local proxy. Start the backend stack first, then run:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`. The sign-in form uses the seeded account in
+`auth-service/src/main/resources/data.sql`; patient records can be searched,
+created, edited, and deleted from the dashboard.
+
+Frontend code is organized by responsibility:
+
+```text
+frontend/src/
+├── api/client.js                 # Authenticated API clients
+├── components/Icon.jsx           # Shared UI primitive
+├── features/auth/Login.jsx       # Authentication flow
+├── features/dashboard/Dashboard.jsx
+├── features/patients/PatientModal.jsx
+├── constants.js
+└── App.jsx                       # Application composition
+```
+
+The dashboard also exposes the service interactions: creating a patient calls
+the billing service over gRPC and publishes a patient event to Kafka. The
+frontend reads the billing projection from `/api/billing/accounts` and the
+analytics projection from `/api/analytics/overview` through authenticated
+gateway routes. These demo projections are held in service memory and reset
+when the billing or analytics containers restart.
+
 ## LocalStack infrastructure
 
 The free LocalStack deployment is intentionally limited to resources supported
